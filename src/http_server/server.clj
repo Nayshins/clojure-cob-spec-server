@@ -1,21 +1,11 @@
-(ns http-server.core
+(ns http-server.server
   (:require [clojure.tools.cli :refer [parse-opts]])
   (:gen-class))
 (import '[java.io BufferedReader InputStreamReader OutputStreamWriter]
         '[java.net ServerSocket Socket SocketException]
         '[java.lang Integer])
 
-
-(defn echo [socket]
-  (binding [*in* (BufferedReader. (InputStreamReader. (.getInputStream socket)))
-            *out* (OutputStreamWriter. (.getOutputStream socket))] 
-   (loop []
-      (println (read-line))
-      (recur))))
-
-(defn create-server
-  [port fun]
-  (fun (.accept (ServerSocket. port))))
+(def connection-count (atom 0N))
 
 (def cli-options
   [["-p" "--port PORT" "Port number"
@@ -27,7 +17,19 @@
     :id :directory
     :default "~/Public"]])
 
-(defn -main [& args]
-  (let [{:keys [options args errors summary]} (parse-opts args cli-options)]
-    (create-server (options :port) echo)))
+(defn handle-connection [^ServerSocket server]
+    (try
+      (.accept server)
+      (catch SocketException e)))
+
+(defn create-server-socket [port]
+  (ServerSocket. port))
+
+(defn server [server-socket]
+    (future
+     (let [connection (handle-connection server-socket)]
+      (with-open [socket connection]
+        (swap! connection-count inc)))))
+
+(defn -main [& args])
 
