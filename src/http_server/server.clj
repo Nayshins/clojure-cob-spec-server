@@ -1,35 +1,38 @@
 (ns http-server.server
-  (:require [clojure.tools.cli :refer [parse-opts]])
+  (:import [java.io BufferedReader InputStreamReader OutputStreamWriter]
+           [java.net ServerSocket Socket SocketException]
+           [java.lang Integer])
   (:gen-class))
-(import '[java.io BufferedReader InputStreamReader OutputStreamWriter]
-        '[java.net ServerSocket Socket SocketException]
-        '[java.lang Integer])
+
 
 (def connection-count (atom 0N))
 
-(def cli-options
-  [["-p" "--port PORT" "Port number"
-    :id :port
-    :default 5000
-    :parse-fn #(Integer. %)]
-
-   ["-d" "--directory DIRECTORY"  "Directory"
-    :id :directory
-    :default "~/Public"]])
-
 (defn handle-connection [^ServerSocket server]
-    (try
-      (.accept server)
-      (catch SocketException e)))
+  (try
+    (.accept server)
+    (catch SocketException e)))
 
 (defn create-server-socket [port]
   (ServerSocket. port))
 
-(defn server [server-socket]
-    (future
-     (let [connection (handle-connection server-socket)]
-      (with-open [socket connection]
-        (swap! connection-count inc)))))
+(defn read-input [socket]
+  (binding [*in* (BufferedReader. (InputStreamReader. (.getInputStream socket)))
+            *out* (OutputStreamWriter. (.getOutputStream socket))]
+    (do 
+    (read-line) 
+    (println "HTTP/1.1 200 OK")
+    (.close socket))))
 
-(defn -main [& args])
+(defn server [server-socket]
+    (loop []
+      (let [connection (handle-connection server-socket)]
+        (future
+          (with-open [socket connection]
+            (swap! connection-count inc)
+            (read-input connection) )))
+      (if (.isClosed server-socket)
+        (reset! connection-count 0N) 
+        (recur))))
+
+
 
