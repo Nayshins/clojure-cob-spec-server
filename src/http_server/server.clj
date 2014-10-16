@@ -1,5 +1,5 @@
 (ns http-server.server
-  (:import [java.io BufferedReader InputStreamReader OutputStreamWriter]
+  (:import [java.io BufferedReader PrintWriter  InputStreamReader OutputStreamWriter]
            [java.net ServerSocket Socket SocketException]
            [java.lang Integer])
   (:require [clojure.java.io :refer [reader writer]]
@@ -21,19 +21,29 @@
   (let [reader (BufferedReader. (InputStreamReader. (.getInputStream socket)))]
     reader))
 
-(defn read-request [socket]
-  (let [in (socket-reader socket)
-        request (.readLine in)]
+(defn socket-writer [socket]
+  (let [writer (PrintWriter. (.getOutputStream socket))]
+    writer))
+
+(defn read-request [in]
+  (let [request (.read in)]
     request))
 
-(defn write-response [socket response]
-  (binding [*out* (OutputStreamWriter. (.getOutputStream socket))]
-    (println "HTTP/1.1 200 OK\r\n" )))
+(defn read-headers [in]
+  (take-while 
+    (partial not="")
+    (line-seq in)))
+
+(defn write-response [out]
+  (.println out "HTTP/1.1 200 OK\r\n")
+  (.flush out))
 
 (defn socket-handler [socket]
   (with-open [socket socket]
-    (let [response (parse-request-headers (read-request socket))]
-    (write-response socket response))
+    (let [in (socket-reader socket)
+          out (socket-writer socket)]
+      (read-request in)
+      (write-response out))
     ;parse request -> determine action needed -> return response
     ;let [action (parse-input in)] ?
     ;return response 

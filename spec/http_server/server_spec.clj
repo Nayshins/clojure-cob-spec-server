@@ -2,7 +2,10 @@
   (:require [speclj.core :refer :all]
             [http-server.server :refer :all]
             [clojure.java.io :refer [reader writer]])
-  (:import [java.net Socket]))
+  (:import [java.net Socket]
+           [java.io BufferedReader InputStreamReader]
+           [org.apache.commons.io.IOUtils]))
+
 
 (defn connect []
    (with-open [socket (Socket. "localhost"  5000)]
@@ -43,4 +46,26 @@
       (with-open [ss (create-server-socket 4000)]
         (future (server ss))
         (should= "HTTP/1.1 200 OK" (test-input-output "/\n")))))
+
+(describe "request reader"
+  (it "reads all of the request headers"
+     (let [reader (BufferedReader. (InputStreamReader. 
+                                     (org.apache.commons.io.IOUtils/toInputStream
+                                       "GET / HTTP/1.1\r\nheader\r\n\r\nbody")))
+           headers (read-headers reader)]
+      (should-contain "header" headers)
+     (should-not-contain "body" headers))))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
