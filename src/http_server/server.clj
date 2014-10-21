@@ -3,7 +3,8 @@
            [java.net ServerSocket Socket SocketException]
            [java.lang Integer])
   (:require [clojure.java.io :refer [reader writer]]
-            [http-server.input-parser :refer :all])
+            [http-server.request-parser :refer :all]
+            [http-server.router :refer :all])
   (:gen-class))
 
 
@@ -25,40 +26,61 @@
   (let [writer (PrintWriter. (.getOutputStream socket))]
     writer))
 
-(defn read-request [in]
-  (let [request (.read in)]
-    request))
-
 (defn read-headers [in]
-  (take-while 
-    (partial not="")
+  (take-while
+    (partial not= "")
     (line-seq in)))
 
-(defn write-response [out]
-  (.println out "HTTP/1.1 200 OK\r\n")
+(defn parse-content-length [content-length]
+  (as-> content-length  __ 
+    (clojure.string/split __ #" ")
+    (second __)
+    (read-string __)))
+
+(defn get-content-length [headers]
+  (if-let [content-length (re-find #"Content-Length: [0-9]+" headers)]
+    (parse-content-length content-length)
+    0))
+
+(defn read-body [in content-length]
+  (let [body (char-array content-length)]
+    (.read in body 0 content-length)
+    (apply str body)))
+
+(defn read-request [in]
+  (let [headers (doall (read-headers in))
+        headers (apply str headers) 
+        ; FIX THIS FIRST content length returns nil if no content
+        ; length header 
+        content-length (get-content-length headers) 
+        request {:headers headers}]
+    (if (> content-length 0)
+      (assoc request :body (read-body in content-length))
+      request)))
+
+
+(defn write-response [out response]
+  (.write out response)
   (.flush out))
 
-(defn socket-handler [socket]
+(defn socket-handler [socket directory]
   (with-open [socket socket]
     (let [in (socket-reader socket)
-          out (socket-writer socket)]
-      (read-request in)
-      (write-response out))
-    ;parse request -> determine action needed -> return response
-    ;let [action (parse-input in)] ?
-    ;return response 
-    ))
+          out (socket-writer socket)
+          rri (read-request in)
+          parsed-request (parse-request-line (rri :headers))]
+      (write-response out (router directory parsed-request (rri :body))))))
 
-(defn server [server-socket]
-    (loop []
-      (let [connection (accept-connection server-socket)]
-        (future
-          (with-open [socket connection]
-            (swap! connection-count inc)
-            (socket-handler connection) )))
-      (if (.isClosed server-socket)
-        (reset! connection-count 0N)
-        (recur))))
+(defn server [server-socket directory]
+  (loop []
+    (let [connection (accept-connection server-socket)]
+      (future
+        (with-open [socket connection]
+          (swap! connection-count inc)
+          (socket-handler connection directory))))
+    (if (.isClosed server-socket)
+      (reset! connection-count 0N)
+      (recur))))
 
 
 
