@@ -1,14 +1,44 @@
 (ns http-server.router
-  (:require [http_server.response-builder :refer :all])
+  (:require [http_server.response-builder :refer :all]
+            [clojure.java.io :as io]
+            [pantomime.mime :refer [mime-type-of]])
   (:gen-class))
 
 (def invalid-files `("/file1" "/text-file.txt"))
 
+(defn build-directory-links [directory]
+  (let [directory (io/file directory)
+        files (.list directory)]
+    (str "<!DOCTYPE html>"
+         "<html>"
+         "<head>"
+         "<title>directory</title>"
+         "</head>"
+         "<body>"
+         (apply str 
+                (map #(str "<a href=\"/" % "\">" % "</a><br>") files))
+         "</body>"
+         "</html>")))
+
+(defn build-directory [directory]
+  (let [directory-links (build-directory-links directory)]
+    (build-response :200 
+                    {"Content-Length" (count (.getBytes directory-links))} 
+                    directory-links)))
+
+(defn get-file-data [directory location]
+  (try
+  (let [body-data (slurp (str directory location))]
+    (build-response :200 
+                    {"Content-Type" (mime-type-of (io/file (str directory location)))
+                     "Content-Length" (count (.getBytes body-data)) } 
+                    body-data))
+  (catch Exception e (build-response :404 {}))))
+
 (defn get-route [location directory]
   (if (= location "/")
-    (build-response :200 {})
-  (let [body-data (slurp (str directory location))]
-    (build-response :200 {} body-data))))
+    (build-directory directory) 
+    (get-file-data directory location)))
 
 (defn options-route [location directory]
   (build-response :200 {"Allow" "GET,HEAD,POST,OPTIONS,PUT"}))

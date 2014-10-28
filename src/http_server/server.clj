@@ -2,7 +2,7 @@
   (:import [java.io BufferedReader PrintWriter  InputStreamReader OutputStreamWriter]
            [java.net ServerSocket Socket SocketException]
            [java.lang Integer])
-  (:require [clojure.java.io :refer [reader writer]]
+  (:require [clojure.java.io :as io]
             [http-server.request-parser :refer :all]
             [http-server.router :refer :all])
   (:gen-class))
@@ -23,7 +23,7 @@
     reader))
 
 (defn socket-writer [socket]
-  (let [writer (PrintWriter. (.getOutputStream socket))]
+  (let [writer (io/writer (.getOutputStream socket))]
     writer))
 
 (defn read-headers [in]
@@ -50,8 +50,6 @@
 (defn read-request [in]
   (let [headers (doall (read-headers in))
         headers (apply str headers) 
-        ; FIX THIS FIRST content length returns nil if no content
-        ; length header 
         content-length (get-content-length headers) 
         request {:headers headers}]
     (if (> content-length 0)

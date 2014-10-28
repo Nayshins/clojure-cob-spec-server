@@ -1,7 +1,9 @@
 (ns http_server.response-builder
+  (:require [clojure.java.io :as io])
   (:gen-class))
 
 (def response-code { :200 "200 OK\r\n"
+                     :404 "404 NOT FOUND\r\n"
                      :405 "405 METHOD NOT ALLOWED\r\n"})
 
 (defn build-code [code]
@@ -14,11 +16,10 @@
          (apply str))))
 
 (defn build-body [body]
-  (if (nil? (first body))
-    "\r\n"
-  (clojure.string/trim-newline (first body))))
+  (if-not (nil? (first body))
+  (first body)))
 
 (defn build-response [code headers & body]
   (str (build-code code)
        (build-headers headers) "\r\n"
-       (build-body body) "\r\n"))
+       (build-body body)))

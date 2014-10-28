@@ -19,4 +19,7 @@
 (defn -main [& args]
   (let [{:keys [options arguments summary]} (parse-opts args cli-options)]
     (reset! directory (options :directory))
+    (let  [form  (clojure.java.io/file @directory "form")]
+      (.createNewFile form)
+      (.deleteOnExit form))
     (server (create-server-socket (options :port)) (options :directory))))
