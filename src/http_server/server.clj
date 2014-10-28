@@ -1,5 +1,6 @@
 (ns http-server.server
-  (:import [java.io BufferedReader PrintWriter  InputStreamReader OutputStreamWriter]
+  (:import [java.io BufferedReader DataOutputStream
+            InputStreamReader BufferedOutputStream]
            [java.net ServerSocket Socket SocketException]
            [java.lang Integer])
   (:require [clojure.java.io :as io]
@@ -23,7 +24,9 @@
     reader))
 
 (defn socket-writer [socket]
-  (let [writer (io/writer (.getOutputStream socket))]
+  (let [writer (DataOutputStream.
+                        (BufferedOutputStream.
+                          (.getOutputStream socket)))]
     writer))
 
 (defn read-headers [in]
@@ -32,7 +35,7 @@
     (line-seq in)))
 
 (defn parse-content-length [content-length]
-  (as-> content-length  __ 
+  (as-> content-length  __
     (clojure.string/split __ #" ")
     (second __)
     (read-string __)))
@@ -49,8 +52,8 @@
 
 (defn read-request [in]
   (let [headers (doall (read-headers in))
-        headers (apply str headers) 
-        content-length (get-content-length headers) 
+        headers (apply str headers)
+        content-length (get-content-length headers)
         request {:headers headers}]
     (if (> content-length 0)
       (assoc request :body (read-body in content-length))
@@ -58,8 +61,9 @@
 
 
 (defn write-response [out response]
-  (.write out response)
-  (.flush out))
+  (with-open [out out] 
+    (.write out response 0 (count response))
+  (.flush out)))
 
 (defn socket-handler [socket directory]
   (with-open [socket socket]
@@ -67,7 +71,8 @@
           out (socket-writer socket)
           rri (read-request in)
           parsed-request (parse-request-line (rri :headers))]
-      (write-response out (router directory parsed-request (rri :body))))))
+      (let [response (router directory parsed-request (rri :body))]
+        (write-response out response)))))
 
 (defn server [server-socket directory]
   (loop []

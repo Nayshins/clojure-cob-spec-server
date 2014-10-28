@@ -6,6 +6,11 @@
 
 (def invalid-files `("/file1" "/text-file.txt"))
 
+(defn to-byte-array [string]
+  (->> string
+       (.getBytes)
+       (byte-array)))
+
 (defn build-directory-links [directory]
   (let [directory (io/file directory)
         files (.list directory)]
@@ -21,19 +26,28 @@
          "</html>")))
 
 (defn build-directory [directory]
-  (let [directory-links (build-directory-links directory)]
+  (let [directory-links (to-byte-array 
+                          (build-directory-links directory))]
     (build-response :200 
-                    {"Content-Length" (count (.getBytes directory-links))} 
+                    {"Content-Length" (count directory-links)} 
                     directory-links)))
+
+(defn binary-slurp [path]
+  (with-open [out (java.io.ByteArrayOutputStream.)]
+    (io/copy (io/input-stream path) out)
+    (.toByteArray out)))
 
 (defn get-file-data [directory location]
   (try
-  (let [body-data (slurp (str directory location))]
-    (build-response :200 
-                    {"Content-Type" (mime-type-of (io/file (str directory location)))
-                     "Content-Length" (count (.getBytes body-data)) } 
-                    body-data))
-  (catch Exception e (build-response :404 {}))))
+    (let [path (str directory location)
+          body-data (binary-slurp path)]
+      (build-response :200
+                      {"Content-Type" 
+                       (mime-type-of (io/file (str directory location)))
+                       "Content-Length" 
+                       (count body-data) } 
+                      body-data))
+    (catch Exception e (build-response :404 {}))))
 
 (defn get-route [location directory]
   (if (= location "/")
@@ -58,8 +72,8 @@
   (cond
     (not-valid-file location) (build-response :405 {})
     :else (do 
-             (spit (str directory location) body)
-             (build-response :200 {}))))
+            (spit (str directory location) body)
+            (build-response :200 {}))))
 
 (defn delete-route [location directory]
   (spit (str directory location) "")
