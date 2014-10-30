@@ -3,6 +3,8 @@
   (:gen-class))
 
 (def response-code { :200 "200 OK\r\n"
+                     :301 "301 MOVED PERMANENTLY\r\n"
+                     :401 "401 UNAUTHORIZED\r\n"
                      :404 "404 NOT FOUND\r\n"
                      :405 "405 METHOD NOT ALLOWED\r\n"})
 
@@ -12,7 +14,7 @@
 (defn build-headers [headers]
   (if (not-empty headers)
     (->> headers
-         (map #(str (key %) ":" (val %) "\r\n"))
+         (map #(str (key %) ": " (val %) "\r\n"))
          (apply str)
          (.getBytes)
          (byte-array))))

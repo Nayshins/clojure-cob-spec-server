@@ -64,9 +64,9 @@
      (let [reader (BufferedReader.
                     (InputStreamReader. 
                       (org.apache.commons.io.IOUtils/toInputStream
-                        "GET / HTTP/1.1\r\nheader\r\nContent-Length: 4\r\n\r\nbody\r\n\r\n")))
+                        "GET / HTTP/1.1\r\nheader: hello\r\nContent-Length: 4\r\n\r\nbody\r\n\r\n")))
            headers ((read-request reader) :headers)]
-     (should= "headerContent-Length: 4"
+     (should= {:header "hello", :Content-Length "4"}
               headers)
      (should-not-contain "body" headers)))
 

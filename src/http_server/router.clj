@@ -5,6 +5,7 @@
   (:gen-class))
 
 (def invalid-files `("/file1" "/text-file.txt"))
+(def special-routes '("/" "/redirect" "/parameters" "/logs"))
 
 (defn to-byte-array [string]
   (->> string
@@ -32,6 +33,10 @@
                     {"Content-Length" (count directory-links)} 
                     directory-links)))
 
+(defn authenticate []
+  (let [auth (.getBytes "Authentication required")]
+    (build-response :401 {} auth)))
+
 (defn binary-slurp [path]
   (with-open [out (java.io.ByteArrayOutputStream.)]
     (io/copy (io/input-stream path) out)
@@ -49,9 +54,16 @@
                       body-data))
     (catch Exception e (build-response :404 {}))))
 
-(defn get-route [location directory]
-  (if (= location "/")
-    (build-directory directory) 
+(defn handle-special-route [location directory headers]
+  (case location
+    "/" (build-directory directory)
+    "/logs" (authenticate)
+    "/redirect" (build-response :301 {"Location" "http://localhost:5000/"})
+    (build-response :200 {})))
+
+(defn get-route [location directory headers]
+  (if (some (partial = location) special-routes)
+    (handle-special-route location directory headers) 
     (get-file-data directory location)))
 
 (defn options-route [location directory]
@@ -60,7 +72,7 @@
 (defn not-valid-file [location]
   (some (partial = location) invalid-files))
 
-(defn patch-route []
+(defn patch-route [location headers]
   (build-response :200 {}))
 
 (defn post-route [body location directory]
@@ -81,14 +93,14 @@
   (spit (str directory location) "")
   (build-response :200 {}))
 
-(defn router [directory parsed-request & body]
+(defn router [directory parsed-request headers & body]
   (let [action (parsed-request :action)
         location (parsed-request :location)]
     (case action
-      "GET" (get-route location directory)
+      "GET" (get-route location directory headers)
       "OPTIONS" (options-route location directory)
       "POST" (post-route (first body) location directory)
-      "PATCH" (patch-route)
+      "PATCH" (patch-route headers)
       "PUT" (put-route  (first body) location directory)
       "DELETE" (delete-route location directory)
       (build-response :200 {}))))

@@ -74,7 +74,10 @@
           out (socket-writer socket)
           rri (read-request in)
           parsed-request (parse-request-line (rri :request-line))]
-      (let [response (router directory parsed-request (rri :body))]
+      (let [response (router 
+                       directory parsed-request 
+                       (rri :headers)(rri :body))]
+
         (write-response out response)))))
 
 (defn server [server-socket directory]
