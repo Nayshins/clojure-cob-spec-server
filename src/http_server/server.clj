@@ -5,7 +5,8 @@
            [java.lang Integer])
   (:require [clojure.java.io :as io]
             [http-server.request-parser :refer :all]
-            [http-server.router :refer :all])
+            [http-server.router :refer :all]
+            [clojure.tools.logging :as log])
   (:gen-class))
 
 
@@ -34,16 +35,16 @@
     (partial not= "")
     (line-seq in)))
 
-(defn parse-content-length [content-length]
-  (as-> content-length  __
-    (clojure.string/split __ #" ")
-    (second __)
-    (read-string __)))
-
 (defn get-content-length [headers]
-  (if-let [content-length (re-find #"Content-Length: [0-9]+" headers)]
-    (parse-content-length content-length)
+  (if-let [content-length (headers :Content-Length)]
+    (Integer. content-length)
     0))
+
+(defn convert-headers-to-hashmap [headers]
+  (as-> headers __
+    (map #(clojure.string/split % #": ") __)
+    (map #(hash-map (keyword (first %1)) (second %1)) __)
+    (apply merge __)))
 
 (defn read-body [in content-length]
   (let [body (char-array content-length)]
@@ -51,10 +52,12 @@
     (apply str body)))
 
 (defn read-request [in]
-  (let [headers (doall (read-headers in))
-        headers (apply str headers)
+  (let [request (read-headers in) 
+        request-line (first request)
+        headers (convert-headers-to-hashmap (rest request))
         content-length (get-content-length headers)
-        request {:headers headers}]
+        request {:request-line request-line  :headers headers}]
+    (log/info request-line)
     (if (> content-length 0)
       (assoc request :body (read-body in content-length))
       request)))
@@ -70,7 +73,7 @@
     (let [in (socket-reader socket)
           out (socket-writer socket)
           rri (read-request in)
-          parsed-request (parse-request-line (rri :headers))]
+          parsed-request (parse-request-line (rri :request-line))]
       (let [response (router directory parsed-request (rri :body))]
         (write-response out response)))))
 

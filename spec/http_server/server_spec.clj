@@ -3,7 +3,7 @@
             [http-server.server :refer :all]
             [clojure.java.io :refer [reader writer]])
   (:import [java.net Socket]
-           [java.io BufferedReader InputStreamReader]
+           [java.io BufferedReader InputStreamReader StringReader]
            [org.apache.commons.io.IOUtils]))
 
 
@@ -46,11 +46,18 @@
 
 (describe "get content length"
   (it "gets the length from header"
-    (should= 4 (get-content-length "GET / HTTP/1.1\r\nContent-Length: 4\r\n\r\nbody\r\n\r\n")))
+    (should= 4 (get-content-length {:Content-Length 4})))
   
   (it "should return 0 for headers without content length"
-    (should= 0 (get-content-length "GET / HTTP/1.1\r\nheader\r\n\r\n"))))
+    (should= 0 (get-content-length {:Content-Length nil}))))
 
+(describe "convert headers to hashmap"
+  (it "converts header lazy seq to hashmap"
+    (should= "value"
+             (let [string-seq
+                   (line-seq (BufferedReader. 
+                               (StringReader. "key: value\nx-ray: foxtrot")))]
+               ((convert-headers-to-hashmap string-seq) :key)))))
 
 (describe "request reader"
   (it "reads all of the request headers"
@@ -59,7 +66,7 @@
                       (org.apache.commons.io.IOUtils/toInputStream
                         "GET / HTTP/1.1\r\nheader\r\nContent-Length: 4\r\n\r\nbody\r\n\r\n")))
            headers ((read-request reader) :headers)]
-     (should= "GET / HTTP/1.1headerContent-Length: 4"
+     (should= "headerContent-Length: 4"
               headers)
      (should-not-contain "body" headers)))
 

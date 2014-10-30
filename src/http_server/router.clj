@@ -60,6 +60,8 @@
 (defn not-valid-file [location]
   (some (partial = location) invalid-files))
 
+(defn patch-route []
+  (build-response :200 {}))
 
 (defn post-route [body location directory]
   (cond
@@ -86,6 +88,7 @@
       "GET" (get-route location directory)
       "OPTIONS" (options-route location directory)
       "POST" (post-route (first body) location directory)
+      "PATCH" (patch-route)
       "PUT" (put-route  (first body) location directory)
       "DELETE" (delete-route location directory)
       (build-response :200 {}))))
