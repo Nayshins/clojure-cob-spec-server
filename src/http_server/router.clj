@@ -1,6 +1,7 @@
 (ns http-server.router
   (:require [http_server.response-builder :refer :all]
             [clojure.java.io :as io]
+            [base64-clj.core :as base64]
             [pantomime.mime :refer [mime-type-of]])
   (:gen-class))
 
@@ -33,14 +34,17 @@
                     {"Content-Length" (count directory-links)} 
                     directory-links)))
 
-(defn authenticate []
-  (let [auth (.getBytes "Authentication required")]
-    (build-response :401 {} auth)))
 
 (defn binary-slurp [path]
   (with-open [out (java.io.ByteArrayOutputStream.)]
     (io/copy (io/input-stream path) out)
     (.toByteArray out)))
+
+(defn check-auth [auth]
+  (let [auth (clojure.string/split auth)]
+  (if auth
+    (= "admin:hunter2" (base64/decode (second auth))) 
+  false)))
 
 (defn get-file-data [directory location]
   (try
@@ -54,10 +58,17 @@
                       body-data))
     (catch Exception e (build-response :404 {}))))
 
+
+(defn authenticate [directory location headers]
+  (let [no-auth (.getBytes "Authentication required")]
+  (if (headers :Authorization)
+    (get-file-data directory location) 
+    (build-response :401 {} no-auth))))
+
 (defn handle-special-route [location directory headers]
   (case location
     "/" (build-directory directory)
-    "/logs" (authenticate)
+    "/logs" (authenticate directory location headers)
     "/redirect" (build-response :301 {"Location" "http://localhost:5000/"})
     (build-response :200 {})))
 
