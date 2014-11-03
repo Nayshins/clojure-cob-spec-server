@@ -77,7 +77,6 @@
       (let [response (router 
                        directory parsed-request 
                        (rri :headers)(rri :body))]
-
         (write-response out response)))))
 
 (defn server [server-socket directory]

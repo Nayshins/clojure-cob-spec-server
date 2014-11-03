@@ -3,6 +3,7 @@
   (:gen-class))
 
 (def response-code { :200 "200 OK\r\n"
+                     :206 "206 Partial Content\r\n"
                      :301 "301 MOVED PERMANENTLY\r\n"
                      :401 "401 UNAUTHORIZED\r\n"
                      :404 "404 NOT FOUND\r\n"

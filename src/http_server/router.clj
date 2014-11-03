@@ -46,23 +46,46 @@
     (= "admin:hunter2" (base64/decode (second auth))) 
   false)))
 
-(defn get-file-data [directory location]
+(defn get-trimmed-body [body-bytes begin end]
+  (->> body-bytes
+       (seq)
+       (drop begin)
+       (take end)
+       (byte-array)))
+
+(defn parse-byte-range [byte-header]
+  (map #(.replaceAll % "[^0-9]" "") (clojure.string/split byte-header #"-")))
+
+(defn get-file-range [body-bytes range-header path]
+  (let [byte-range (parse-byte-range range-header)
+        begin (Integer. (first byte-range))
+        end (+ 1 (Integer. (second byte-range)))
+        body (get-trimmed-body body-bytes begin end)]
+    (prn begin end)
+    (build-response :206 {"Content-Type"
+                         (mime-type-of (io/file path))
+                         "Content-Length"
+                         (count body)}
+                    body)))
+
+(defn get-file-data [directory location headers]
   (try
     (let [path (str directory location)
           body-data (binary-slurp path)]
+      (if (contains? headers :Range)
+        (get-file-range body-data (headers :Range) path)
       (build-response :200
                       {"Content-Type" 
-                       (mime-type-of (io/file (str directory location)))
+                       (mime-type-of (io/file path))
                        "Content-Length" 
                        (count body-data) } 
-                      body-data))
+                      body-data)))
     (catch Exception e (build-response :404 {}))))
-
 
 (defn authenticate [directory location headers]
   (let [no-auth (.getBytes "Authentication required")]
   (if (headers :Authorization)
-    (get-file-data directory location) 
+    (get-file-data directory location headers) 
     (build-response :401 {} no-auth))))
 
 (defn handle-special-route [location directory headers]
@@ -75,7 +98,7 @@
 (defn get-route [location directory headers]
   (if (some (partial = location) special-routes)
     (handle-special-route location directory headers) 
-    (get-file-data directory location)))
+    (get-file-data directory location headers)))
 
 (defn options-route [location directory]
   (build-response :200 {"Allow" "GET,HEAD,POST,OPTIONS,PUT"}))
