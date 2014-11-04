@@ -35,7 +35,7 @@
       (future (server ss 
                  "/Users/Nayshins/desktop/projects/http-server/public"))
         (connect)
-      (should= 1 @connection-count)))
+     (should (> @connection-count 0))))
 
   (it "accepts many connections"
       (with-open [ss (create-server-socket 5000)]
@@ -46,7 +46,7 @@
 
 (describe "get content length"
   (it "gets the length from header"
-    (should= 4 (get-content-length {:Content-Length 4})))
+    (should= 4 (get-content-length {:Content-Length "4"})))
   
   (it "should return 0 for headers without content length"
     (should= 0 (get-content-length {:Content-Length nil}))))

@@ -1,10 +1,10 @@
 (ns http-server.router
   (:require [http_server.response-builder :refer :all]
+            [http_server.file-interactor :refer :all]
             [clojure.java.io :as io]
             [base64-clj.core :as base64]
             [pantomime.mime :refer [mime-type-of]]
-            [pandect.core :refer :all])
-  (:gen-class))
+            [pandect.core :refer :all]))
 
 (set! *warn-on-reflection* true)
 
@@ -38,16 +38,12 @@
                     directory-links)))
 
 
-(defn binary-slurp [path]
-  (with-open [out (java.io.ByteArrayOutputStream.)]
-    (io/copy (io/input-stream path) out)
-    (.toByteArray out)))
 
 (defn check-auth [auth]
   (let [auth (clojure.string/split auth)]
-  (if auth
-    (= "admin:hunter2" (base64/decode (second auth))) 
-  false)))
+    (if auth
+      (= "admin:hunter2" (base64/decode (second auth))) 
+      false)))
 
 (defn get-trimmed-body [body-bytes begin end]
   (->> body-bytes
@@ -59,15 +55,15 @@
 (defn parse-byte-range [byte-header]
   (map #(.replaceAll ^String % "[^0-9]" "")  (clojure.string/split byte-header #"-")))
 
-(defn get-file-range [body-bytes range-header path]
+(defn get-body-range [body-bytes range-header path]
   (let [byte-range (parse-byte-range range-header)
         begin (Integer. ^String (first byte-range))
         end (+ 1 (Integer. ^String (second byte-range)))
         body (get-trimmed-body body-bytes begin end)]
     (build-response :206 {"Content-Type"
-                         (mime-type-of (io/file path))
-                         "Content-Length"
-                         (count body)}
+                          (mime-type-of (io/file path))
+                          "Content-Length"
+                          (count body)}
                     body)))
 
 (defn get-file-data [directory location headers]
@@ -75,27 +71,28 @@
     (let [path (str directory location)
           body-data (binary-slurp path)]
       (if (contains? headers :Range)
-        (get-file-range body-data (headers :Range) path)
-      (build-response :200
-                      {"Content-Type" 
-                       (mime-type-of (io/file path))
-                       "Content-Length" 
-                       (count body-data) } 
-                      body-data)))
-    (catch Exception e (build-response :404 {}))))
+        (get-body-range body-data (headers :Range) path)
+        (build-response :200
+                        {"Content-Type" 
+                         (mime-type-of (io/file path))
+                         "Content-Length" 
+                         (count body-data) } 
+                        body-data)))
+    (catch Exception e
+      (build-response :404 {}))))
 
 (defn authenticate [directory location headers]
   (let [no-auth (.getBytes "Authentication required")]
-  (if (headers :Authorization)
-    (get-file-data directory location headers) 
-    (build-response :401 {} no-auth))))
+    (if (headers :Authorization)
+      (get-file-data directory location headers) 
+      (build-response :401 {} no-auth))))
 
 (defn decode-params [params]
   (let [params (clojure.string/replace params #"=" " = ")]
-  (->> params
-       (java.net.URLDecoder/decode)
-       (.getBytes)
-       (byte-array))))
+    (->> params
+         (java.net.URLDecoder/decode)
+         (.getBytes)
+         (byte-array))))
 
 (defn handle-query [params]
   (let [decoded-params (decode-params params)]
@@ -113,9 +110,9 @@
   (let [query (clojure.string/split location #"\?") 
         location (first query)
         params (second query)]
-  (if (some (partial = location) special-routes)
-    (handle-special-route location directory headers params) 
-    (get-file-data directory location headers))))
+    (if (some (partial = location) special-routes)
+      (handle-special-route location directory headers params) 
+      (get-file-data directory location headers))))
 
 (defn options-route [location directory]
   (build-response :200 {"Allow" "GET,HEAD,POST,OPTIONS,PUT"}))
@@ -128,14 +125,14 @@
         file-data (slurp path)
         encoded-file-data (sha1 file-data)
         etag (headers :If-Match)]
-    (spit path body )
+    (overwrite-file path body)
     (build-response :204 {})))
 
 (defn post-route [body location directory]
   (cond
     (not-valid-file location) (build-response :405 {})
     :else (do 
-            (spit (str directory location) body :append true)
+            (append-to-file (str directory location) body)
             (build-response :200 {}))))
 
 (defn put-route [body location directory]
@@ -159,4 +156,4 @@
       "PATCH" (patch-route (first body) location directory headers)
       "PUT" (put-route  (first body) location directory)
       "DELETE" (delete-route location directory)
-      (build-response :200 {}))))
+      (build-response :404 {}))))

@@ -1,7 +1,6 @@
 (ns http-server.request-parser
  (:require [clojure.string :as str]
-           [clojure.tools.logging :as log])
-  (:gen-class))
+           [clojure.tools.logging :as log]))
 
 (defn parse-request-line [request]
   (let [request-line (zipmap [:action :location :http] 

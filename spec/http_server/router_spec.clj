@@ -31,16 +31,16 @@
              (String. (router path {:action "GET" :location "/foobar"} {}))))
 
   (it "returns 206 partial when given a range header"
-    (should-contain "HTTP/1.1 206 Partial Content\r\n"
+    (should-contain "HTTP/1.1 206 PARTIAL CONTENT\r\n"
                     (String. (router path {:action "GET" :location "/partial_content.txt"}
                                      {:Range "bytes=0-4"}))))
   
   (it "returns 200 when give query params"
-    (should-contain ok
+    (should-contain "HTTP/1.1 200 OK\r\n"
                     (String. (router path {:action "GET" :location query-params} {}))))
 
   (it "should contain query params in the body of the response"
-    (should-contain "variable_1=Operators <, >, =, !=; +, -, *, &, @, #, $, [, ]:"
+    (should-contain "variable_1 = Operators <, >, =, !=; +, -, *, &, @, #, $, [, ]:"
                     (String. (router path {:action "GET" :location query-params} {}))))
 
   (it "returns allow header with GET POST OPTIONS PUT HEAD from options"

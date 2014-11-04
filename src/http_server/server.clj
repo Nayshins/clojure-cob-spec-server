@@ -6,8 +6,7 @@
   (:require [clojure.java.io :as io]
             [http-server.request-parser :refer :all]
             [http-server.router :refer :all]
-            [clojure.tools.logging :as log])
-  (:gen-class))
+            [clojure.tools.logging :as log]))
 
 (set! *warn-on-reflection* true)
 
