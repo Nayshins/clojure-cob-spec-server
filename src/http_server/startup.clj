@@ -4,6 +4,8 @@
   (:import [java.io File])
   (:gen-class))
 
+(set! *warn-on-reflection* true)
+
 (def directory (atom ""))
 
 (def cli-options
@@ -19,7 +21,4 @@
 (defn -main [& args]
   (let [{:keys [options arguments summary]} (parse-opts args cli-options)]
     (reset! directory (options :directory))
-    (let  [form  (clojure.java.io/file @directory "form")]
-      (.createNewFile form)
-      (.deleteOnExit form))
     (server (create-server-socket (options :port)) (options :directory))))

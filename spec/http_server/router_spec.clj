@@ -8,6 +8,8 @@
 (def test-path 
   (str (-> (java.io.File. "") .getAbsolutePath) "/test"))
 
+(def query-params "/parameters?variable_1=Operators%20%3C%2C%20%3E%2C%20%3D%2C%20!%3D%3B%20%2B%2C%20-%2C%20*%2C%20%26%2C%20%40%2C%20%23%2C%20%24%2C%20%5B%2C%20%5D%3A%20%22is%20that%20all%22%3F&variable_2=stuff")
+
 (def ok "HTTP/1.1 200 OK\r\n\r\n")
 
 (defn write-to-test [text]
@@ -32,6 +34,14 @@
     (should-contain "HTTP/1.1 206 Partial Content\r\n"
                     (String. (router path {:action "GET" :location "/partial_content.txt"}
                                      {:Range "bytes=0-4"}))))
+  
+  (it "returns 200 when give query params"
+    (should-contain ok
+                    (String. (router path {:action "GET" :location query-params} {}))))
+
+  (it "should contain query params in the body of the response"
+    (should-contain "variable_1=Operators <, >, =, !=; +, -, *, &, @, #, $, [, ]:"
+                    (String. (router path {:action "GET" :location query-params} {}))))
 
   (it "returns allow header with GET POST OPTIONS PUT HEAD from options"
     (should=

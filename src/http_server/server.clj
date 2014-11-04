@@ -9,6 +9,7 @@
             [clojure.tools.logging :as log])
   (:gen-class))
 
+(set! *warn-on-reflection* true)
 
 (def connection-count (atom 0N))
 
@@ -21,13 +22,13 @@
   (ServerSocket. port))
 
 (defn socket-reader [socket]
-  (let [reader (BufferedReader. (InputStreamReader. (.getInputStream socket)))]
+  (let [reader (BufferedReader. (InputStreamReader. (.getInputStream ^Socket socket)))]
     reader))
 
 (defn socket-writer [socket]
   (let [writer (DataOutputStream.
                         (BufferedOutputStream.
-                          (.getOutputStream socket)))]
+                          (.getOutputStream ^Socket socket)))]
     writer))
 
 (defn read-headers [in]
@@ -37,7 +38,7 @@
 
 (defn get-content-length [headers]
   (if-let [content-length (headers :Content-Length)]
-    (Integer. content-length)
+    (Integer. ^String content-length)
     0))
 
 (defn convert-headers-to-hashmap [headers]
@@ -46,7 +47,7 @@
     (map #(hash-map (keyword (first %1)) (second %1)) __)
     (apply merge __)))
 
-(defn read-body [in content-length]
+(defn read-body [^BufferedReader in content-length]
   (let [body (char-array content-length)]
     (.read in body 0 content-length)
     (apply str body)))
@@ -63,13 +64,13 @@
       request)))
 
 
-(defn write-response [out response]
+(defn write-response [^DataOutputStream out response]
   (with-open [out out] 
     (.write out response 0 (count response))
   (.flush out)))
 
 (defn socket-handler [socket directory]
-  (with-open [socket socket]
+  (with-open [socket ^Socket socket]
     (let [in (socket-reader socket)
           out (socket-writer socket)
           rri (read-request in)
@@ -79,11 +80,11 @@
                        (rri :headers)(rri :body))]
         (write-response out response)))))
 
-(defn server [server-socket directory]
+(defn server [^ServerSocket server-socket directory]
   (loop []
     (let [connection (accept-connection server-socket)]
       (future
-        (with-open [socket connection]
+        (with-open [socket ^Socket connection]
           (swap! connection-count inc)
           (socket-handler connection directory))))
     (if (.isClosed server-socket)

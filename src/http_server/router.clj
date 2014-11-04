@@ -2,14 +2,17 @@
   (:require [http_server.response-builder :refer :all]
             [clojure.java.io :as io]
             [base64-clj.core :as base64]
-            [pantomime.mime :refer [mime-type-of]])
+            [pantomime.mime :refer [mime-type-of]]
+            [pandect.core :refer :all])
   (:gen-class))
+
+(set! *warn-on-reflection* true)
 
 (def invalid-files `("/file1" "/text-file.txt"))
 (def special-routes '("/" "/redirect" "/parameters" "/logs"))
 
 (defn to-byte-array [string]
-  (->> string
+  (->> ^String string
        (.getBytes)
        (byte-array)))
 
@@ -54,14 +57,13 @@
        (byte-array)))
 
 (defn parse-byte-range [byte-header]
-  (map #(.replaceAll % "[^0-9]" "") (clojure.string/split byte-header #"-")))
+  (map #(.replaceAll ^String % "[^0-9]" "")  (clojure.string/split byte-header #"-")))
 
 (defn get-file-range [body-bytes range-header path]
   (let [byte-range (parse-byte-range range-header)
-        begin (Integer. (first byte-range))
-        end (+ 1 (Integer. (second byte-range)))
+        begin (Integer. ^String (first byte-range))
+        end (+ 1 (Integer. ^String (second byte-range)))
         body (get-trimmed-body body-bytes begin end)]
-    (prn begin end)
     (build-response :206 {"Content-Type"
                          (mime-type-of (io/file path))
                          "Content-Length"
@@ -88,17 +90,32 @@
     (get-file-data directory location headers) 
     (build-response :401 {} no-auth))))
 
-(defn handle-special-route [location directory headers]
+(defn decode-params [params]
+  (let [params (clojure.string/replace params #"=" " = ")]
+  (->> params
+       (java.net.URLDecoder/decode)
+       (.getBytes)
+       (byte-array))))
+
+(defn handle-query [params]
+  (let [decoded-params (decode-params params)]
+    (build-response :200 {:Content-Length (count decoded-params)} decoded-params)))
+
+(defn handle-special-route [location directory headers params]
   (case location
     "/" (build-directory directory)
     "/logs" (authenticate directory location headers)
+    "/parameters" (handle-query params)
     "/redirect" (build-response :301 {"Location" "http://localhost:5000/"})
     (build-response :200 {})))
 
-(defn get-route [location directory headers]
+(defn get-route [location directory headers] 
+  (let [query (clojure.string/split location #"\?") 
+        location (first query)
+        params (second query)]
   (if (some (partial = location) special-routes)
-    (handle-special-route location directory headers) 
-    (get-file-data directory location headers)))
+    (handle-special-route location directory headers params) 
+    (get-file-data directory location headers))))
 
 (defn options-route [location directory]
   (build-response :200 {"Allow" "GET,HEAD,POST,OPTIONS,PUT"}))
@@ -106,8 +123,13 @@
 (defn not-valid-file [location]
   (some (partial = location) invalid-files))
 
-(defn patch-route [location headers]
-  (build-response :200 {}))
+(defn patch-route [body location directory headers]
+  (let [path (str directory location)
+        file-data (slurp path)
+        encoded-file-data (sha1 file-data)
+        etag (headers :If-Match)]
+    (spit path body )
+    (build-response :204 {})))
 
 (defn post-route [body location directory]
   (cond
@@ -134,7 +156,7 @@
       "GET" (get-route location directory headers)
       "OPTIONS" (options-route location directory)
       "POST" (post-route (first body) location directory)
-      "PATCH" (patch-route headers)
+      "PATCH" (patch-route (first body) location directory headers)
       "PUT" (put-route  (first body) location directory)
       "DELETE" (delete-route location directory)
       (build-response :200 {}))))
