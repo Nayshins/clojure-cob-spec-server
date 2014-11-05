@@ -34,7 +34,9 @@
     (should-contain "HTTP/1.1 206 PARTIAL CONTENT\r\n"
                     (String. (router path {:action "GET" :location "/partial_content.txt"}
                                      {:Range "bytes=0-4"}))))
-  
+  (it "returns 301 on GET /redirect"
+    (should-contain "HTTP/1.1 301"
+                    (String. (router path {:action "GET" :location "/redirect"} {}))))  
   (it "returns 200 when give query params"
     (should-contain "HTTP/1.1 200 OK\r\n"
                     (String. (router path {:action "GET" :location query-params} {}))))
@@ -46,7 +48,10 @@
   (it "returns allow header with GET POST OPTIONS PUT HEAD from options"
     (should=
       "HTTP/1.1 200 OK\r\nAllow: GET,HEAD,POST,OPTIONS,PUT\r\n\r\n"
-      (String. (router path  {:action "OPTIONS" :location "/"} {}))))
+      (String. (router path  {:action "OPTIONS" :location "/"} {} "test"))))
+  (it "returns 204 no content on PATCH"
+    (should-contain "HTTP/1.1 204"
+                    (String. (router path {:action "PATCH" :location "/test"} {} ))))
 
   (it "appends body of the request to the requested file POST"
     (write-to-test "test")

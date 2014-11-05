@@ -8,7 +8,7 @@
 
 (set! *warn-on-reflection* true)
 
-(def invalid-files `("/file1" "/text-file.txt"))
+(def invalid-files '("/file1" "/text-file.txt"))
 (def special-routes '("/" "/redirect" "/parameters" "/logs"))
 
 (defn to-byte-array [string]
@@ -96,7 +96,9 @@
 
 (defn handle-query [params]
   (let [decoded-params (decode-params params)]
-    (build-response :200 {:Content-Length (count decoded-params)} decoded-params)))
+    (build-response :200 
+                    {:Content-Length (count decoded-params)} 
+                    decoded-params)))
 
 (defn handle-special-route [location directory headers params]
   (case location
@@ -156,4 +158,4 @@
       "PATCH" (patch-route (first body) location directory headers)
       "PUT" (put-route  (first body) location directory)
       "DELETE" (delete-route location directory)
-      (build-response :404 {}))))
+      (build-response :500 {}))))

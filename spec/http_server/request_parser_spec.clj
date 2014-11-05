@@ -5,5 +5,7 @@
   (it "returns the action from the request"
     (should= "GET" ((parse-request-line "GET / HTTP/1.1headerContent-Length: 4") :action)))
   (it "returns the location of the request"
-    (should= "/" ((parse-request-line "GET / HTTP/1.1headerContent-Length: 4") :location))))
+    (should= "/" ((parse-request-line "GET / HTTP/1.1headerContent-Length: 4") :location)))
+  (it "returns the HTTP version"
+    (should= "HTTP/1.1" ((parse-request-line "GET / HTTP/1.1") :http))))
 
