@@ -7,3 +7,13 @@
                              (str/split request #" "))]
    request-line))
 
+(defn get-content-length [headers]
+  (if-let [content-length (headers :Content-Length)]
+    (Integer. ^String content-length)
+    0))
+
+(defn convert-headers-to-hashmap [headers]
+  (as-> headers __
+    (map #(clojure.string/split % #": ") __)
+    (map #(hash-map (keyword (first %1)) (second %1)) __)
+    (apply merge __)))

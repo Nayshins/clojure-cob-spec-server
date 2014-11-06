@@ -35,16 +35,6 @@
     (partial not= "")
     (line-seq in)))
 
-(defn get-content-length [headers]
-  (if-let [content-length (headers :Content-Length)]
-    (Integer. ^String content-length)
-    0))
-
-(defn convert-headers-to-hashmap [headers]
-  (as-> headers __
-    (map #(clojure.string/split % #": ") __)
-    (map #(hash-map (keyword (first %1)) (second %1)) __)
-    (apply merge __)))
 
 (defn read-body [^BufferedReader in content-length]
   (let [body (char-array content-length)]

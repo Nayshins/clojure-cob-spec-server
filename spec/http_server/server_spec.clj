@@ -43,21 +43,6 @@
         (multiple-connect 10))
       (should (> @connection-count 9))))
 
-(describe "get content length"
-  (it "gets the length from header"
-    (should= 4 (get-content-length {:Content-Length "4"})))
-  
-  (it "should return 0 for headers without content length"
-    (should= 0 (get-content-length {:Content-Length nil}))))
-
-(describe "convert headers to hashmap"
-  (it "converts header lazy seq to hashmap"
-    (should= "value"
-             (let [string-seq
-                   (line-seq (BufferedReader. 
-                               (StringReader. "key: value\nx-ray: foxtrot")))]
-               ((convert-headers-to-hashmap string-seq) :key)))))
-
 (describe "request reader"
   (it "reads all of the request headers"
      (let [reader (BufferedReader.
@@ -72,9 +57,11 @@
 
   (it "reads the body of the request"
     (let [reader (BufferedReader.
-                  (InputStreamReader.
-                    (org.apache.commons.io.IOUtils/toInputStream
-                      "GET / HTTP/1.1\r\nContent-Length: 4\r\n\r\nbody\r\n\r\n")))]
+                   (InputStreamReader.
+                     (clojure.java.io/input-stream 
+                       (byte-array
+                         (.getBytes
+                           "GET / HTTP/1.1\r\nContent-Length: 4\r\n\r\nbody\r\n\r\n")))))]
       (should= "body" ((read-request reader) :body)))))
 
 (describe "socket handler"
