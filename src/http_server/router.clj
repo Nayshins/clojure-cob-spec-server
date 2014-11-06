@@ -148,6 +148,9 @@
   (spit (str directory location) "")
   (build-response :200 {}))
 
+(defn head-route [location directory]
+  (build-response :200 {}))
+
 (defn router [directory parsed-request headers & body]
   (let [action (parsed-request :action)
         location (parsed-request :location)]
@@ -158,4 +161,5 @@
       "PATCH" (patch-route (first body) location directory headers)
       "PUT" (put-route  (first body) location directory)
       "DELETE" (delete-route location directory)
+      "HEAD" (head-route location directory)
       (build-response :500 {}))))

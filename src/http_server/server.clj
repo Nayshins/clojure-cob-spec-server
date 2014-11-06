@@ -68,8 +68,7 @@
     (.write out response 0 (count response))
   (.flush out)))
 
-(defn socket-handler [socket directory]
-  (with-open [socket ^Socket socket]
+(defn socket-handler [^Socket socket directory]
     (let [in (socket-reader socket)
           out (socket-writer socket)
           rri (read-request in)
@@ -77,7 +76,7 @@
       (let [response (router 
                        directory parsed-request 
                        (rri :headers)(rri :body))]
-        (write-response out response)))))
+        (write-response out response))))
 
 (defn server [^ServerSocket server-socket directory]
   (loop []
