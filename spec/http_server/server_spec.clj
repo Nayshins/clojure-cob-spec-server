@@ -3,8 +3,7 @@
             [http-server.server :refer :all]
             [clojure.java.io :refer [reader writer]])
   (:import [java.net Socket]
-           [java.io BufferedReader InputStreamReader StringReader]
-           [org.apache.commons.io.IOUtils]))
+           [java.io BufferedReader InputStreamReader StringReader]))
 
 
 (defn connect []
@@ -41,8 +40,8 @@
       (with-open [ss (create-server-socket 5000)]
         (future (server ss
                    "/Users/Nayshins/desktop/projects/http-server/public"))
-        (multiple-connect 9))
-      (should= 10 @connection-count)))
+        (multiple-connect 10))
+      (should (> @connection-count 9))))
 
 (describe "get content length"
   (it "gets the length from header"
@@ -63,8 +62,9 @@
   (it "reads all of the request headers"
      (let [reader (BufferedReader.
                     (InputStreamReader. 
-                      (org.apache.commons.io.IOUtils/toInputStream
-                        "GET / HTTP/1.1\r\nheader: hello\r\nContent-Length: 4\r\n\r\nbody\r\n\r\n")))
+                      (clojure.java.io/input-stream
+                        (byte-array (.getBytes 
+                          "GET / HTTP/1.1\r\nheader: hello\r\nContent-Length: 4\r\n\r\nbody\r\n\r\n")))))
            headers ((read-request reader) :headers)]
      (should= {:header "hello", :Content-Length "4"}
               headers)
