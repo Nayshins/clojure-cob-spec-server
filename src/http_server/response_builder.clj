@@ -9,7 +9,8 @@
                      :401 "401 UNAUTHORIZED\r\n"
                      :404 "404 NOT FOUND\r\n"
                      :405 "405 METHOD NOT ALLOWED\r\n"
-                     :409 "409 CONFLICT\r\n"})
+                     :409 "409 CONFLICT\r\n"
+                     :500 "500 INTERNAL SERVER ERROR\r\n"})
 
 (defn build-code [code]
   (byte-array (.getBytes (str "HTTP/1.1 " (response-code code)))))

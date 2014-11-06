@@ -13,19 +13,21 @@
 (def ok "HTTP/1.1 200 OK\r\n\r\n")
 
 (defn write-to-test [text]
-    (spit (str path "/test") text))
+  (spit (str path "/test") text))
 
 (describe "Router"
   (after (write-to-test ""))
 
   (it "returns file contnets from a GET /file request"
-    (should= "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 15\r\n\r\nfile1 contents\n"
+    (should= 
+      "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 15\r\n\r\nfile1 contents\n"
              (String. (router path {:action "GET" :location "/file1"} {}))))
 
   (it "returns directory links from GET /"
-    (should= "HTTP/1.1 200 OK\r\nContent-Length: 114\r\n\r\n<!DOCTYPE html><html><head><title>directory</title></head><body><a href=\"/file.txt\">file.txt</a><br></body></html>" 
+    (should= 
+      "HTTP/1.1 200 OK\r\nContent-Length: 114\r\n\r\n<!DOCTYPE html><html><head><title>directory</title></head><body><a href=\"/file.txt\">file.txt</a><br></body></html>" 
              (String. (router test-path {:action "GET" :location "/"} {}))))
-  
+
   (it "returns 404 when trying to read nonexistent file"
     (should= "HTTP/1.1 404 NOT FOUND\r\n\r\n" 
              (String. (router path {:action "GET" :location "/foobar"} {}))))
@@ -34,9 +36,11 @@
     (should-contain "HTTP/1.1 206 PARTIAL CONTENT\r\n"
                     (String. (router path {:action "GET" :location "/partial_content.txt"}
                                      {:Range "bytes=0-4"}))))
+
   (it "returns 301 on GET /redirect"
     (should-contain "HTTP/1.1 301"
-                    (String. (router path {:action "GET" :location "/redirect"} {}))))  
+                    (String. (router path {:action "GET" :location "/redirect"} {})))) 
+
   (it "returns 200 when give query params"
     (should-contain "HTTP/1.1 200 OK\r\n"
                     (String. (router path {:action "GET" :location query-params} {}))))
@@ -49,6 +53,7 @@
     (should=
       "HTTP/1.1 200 OK\r\nAllow: GET,HEAD,POST,OPTIONS,PUT\r\n\r\n"
       (String. (router path  {:action "OPTIONS" :location "/"} {} "test"))))
+
   (it "returns 204 no content on PATCH"
     (should-contain "HTTP/1.1 204"
                     (String. (router path {:action "PATCH" :location "/test"} {} ))))
@@ -58,12 +63,13 @@
     (should= ok 
              (String. (router path {:action "POST" :location "/test"} {} "test")))
     (should= "testtest" (slurp (str path "/test"))))
-  
+
   (it "PUT overwrites current file content"
     (write-to-test "FAIL")
     (should= ok 
              (String. (router path {:action "PUT" :location "/test"} {} "PUT test")))
     (should= "PUT test" (slurp (str path "/test"))))
+
   (it "should not put to protected file"
     (should= "HTTP/1.1 405 METHOD NOT ALLOWED\r\n\r\n"
              (String.
@@ -75,4 +81,11 @@
     (should= ok 
              (String. 
                (router path {:action "DELETE" :location "/test"} {})))
-    (should= "" (slurp (str path "/test")))))
+    (should= "" (slurp (str path "/test"))))
+
+  (it "returns 200 ok for HEAD request"
+    (should= ok (String. (router path {:action "HEAD" :location "/"} {}))))
+
+  (it "returns 500 for bad reuest"
+    (should-contain "HTTP/1.1 500"
+                    (String. (router path {:action "BAD" :location "/"} {})))))
