@@ -1,0 +1,11 @@
+directory:
+
+protected: /file1, /text-file.txt
+
+redirect: /redirect
+
+authenticate: /logs
+credentials: admin:hunter2
+
+
+
