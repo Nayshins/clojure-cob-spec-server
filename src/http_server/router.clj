@@ -1,6 +1,7 @@
 (ns http-server.router
   (:require [http_server.response-builder :refer :all]
             [http_server.file-interactor :refer :all]
+            [http-server.config :refer :all]
             [clojure.java.io :as io]
             [base64-clj.core :as base64]
             [pantomime.mime :refer [mime-type-of]]
@@ -8,7 +9,12 @@
 
 (set! *warn-on-reflection* true)
 
-(def invalid-files '("/file1" "/text-file.txt"))
+(def config-options (read-config-file
+                         (str 
+                           (-> 
+                             (java.io.File. "")
+                             .getAbsolutePath) "/config")))
+
 (def special-routes '("/" "/redirect" "/parameters" "/logs"))
 
 (defn to-byte-array [string]
@@ -42,7 +48,7 @@
 (defn check-auth [auth]
   (let [auth (clojure.string/split auth)]
     (if auth
-      (= "admin:hunter2" (base64/decode (second auth))) 
+      (= (config-options :credentials) (base64/decode (second auth))) 
       false)))
 
 (defn get-trimmed-body [body-bytes begin end]
@@ -120,15 +126,18 @@
   (build-response :200 {"Allow" "GET,HEAD,POST,OPTIONS,PUT"}))
 
 (defn not-valid-file [location]
-  (some (partial = location) invalid-files))
+  (some (partial = location) (config-options :protected)))
 
 (defn patch-route [body location directory headers]
-  (let [path (str directory location)
-        file-data (slurp path)
-        encoded-file-data (sha1 file-data)
-        etag (headers :If-Match)]
-    (overwrite-file path body)
-    (build-response :204 {})))
+  (cond 
+    (not-valid-file location) (build-response :405 {})
+    :else
+    (let [path (str directory location)
+          file-data (slurp path)
+          encoded-file-data (sha1 file-data)
+          etag (headers :If-Match)]
+      (overwrite-file path body)
+      (build-response :204 {}))))
 
 (defn post-route [body location directory]
   (cond

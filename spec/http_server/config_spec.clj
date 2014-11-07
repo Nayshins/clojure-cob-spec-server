@@ -1,5 +1,5 @@
-(ns http_server.config-spec
-  (:require [http_server.config :refer :all]
+(ns http-server.config-spec
+  (:require [http-server.config :refer :all]
             [speclj.core :refer :all]))
 
 (describe "read-config-file"
@@ -21,4 +21,8 @@
     (should= {:hello '("world", "!")
               :this '("is","a","new","line")}
              (config-line-parser 
-               '("hello: world, !", "this: is, a, new, line")))))
+               '("hello: world, !", "this: is, a, new, line"))))
+  (it "does not add a key that has a nil value"
+    (should= {:hello '("world")} 
+             (config-line-parser
+               '("hello: world", "fail: ")))))

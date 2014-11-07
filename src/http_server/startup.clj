@@ -1,6 +1,7 @@
 (ns http-server.startup
   (:require [clojure.tools.cli :refer [parse-opts]]
-            [http-server.server :refer :all])
+            [http-server.server :refer :all]
+            [http-server.config :refer :all])
   (:import [java.io File])
   (:gen-class))
 
