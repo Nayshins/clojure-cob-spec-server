@@ -129,9 +129,12 @@
   (let [query (clojure.string/split location #"\?") 
         location (first query)
         params (second query)]
-    (if (some (partial = location) special-routes)
-      (handle-special-route location directory headers params) 
-      (get-file-data directory location headers))))
+    (cond 
+      (some (partial = location) special-routes)
+        (handle-special-route location directory headers params)
+      (= "/" location)
+        (get-file-data directory "/index" headers)
+      :else (get-file-data directory location headers))))
 
 (defn options-route [location directory]
   (build-response :200 {"Allow" "GET,HEAD,POST,OPTIONS,PUT"}))
