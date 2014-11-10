@@ -49,10 +49,9 @@
 
 
 (defn check-auth [auth]
-  (let [auth (clojure.string/split auth)]
-    (if auth
-      (= (config-options :credentials) (base64/decode (second auth))) 
-      false)))
+  (if auth
+    (= (config-options :credentials) (base64/decode (second auth))) 
+    false))
 
 (defn get-trimmed-body [body-bytes begin end]
   (->> body-bytes
@@ -93,7 +92,7 @@
 
 (defn authenticate [directory location headers]
   (let [no-auth (.getBytes "Authentication required")]
-    (if (headers :Authorization)
+    (if (headers :Authorization) 
       (get-file-data directory location headers) 
       (build-response :401 {} no-auth))))
 

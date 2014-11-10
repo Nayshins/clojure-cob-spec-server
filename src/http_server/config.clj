@@ -2,6 +2,9 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string]))
 
+(def allowed-keys [:directory :accept-parameters :authenticate 
+                   :credentials :redirect :protected])
+
 (defn split-values [values]
   (if (empty? values)
     ""
@@ -21,7 +24,8 @@
     (remove empty? __)
     (map #(string/split % #": ") __)
     (map combine-into-hashmap __)
-    (apply merge __)))
+    (apply merge __)
+    (select-keys __ allowed-keys)))
 
 (defn read-config-file [file]
   (try

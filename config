@@ -1,6 +1,6 @@
 directory: /
 
-authenticate: logs
+authenticate: /logs
 credentials: admin:hunter2
 
 redirect: /redirect
