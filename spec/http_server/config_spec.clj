@@ -25,4 +25,11 @@
   (it "does not add a key that has a nil value"
     (should= {:hello '("world")} 
              (config-line-parser
-               '("hello: world", "fail: ")))))
+               '("hello: world", "fail: "))))
+  
+  (it "returns empty hashmap if config does not exist"
+    (should= {} (read-config-file "/foo")))
+  
+  (it "retusn empty hashmap if gonfig is empty"
+    (spit "/tmp/test.txt" "")
+    (should= {} (read-config-file "/tmp/test.txt"))))

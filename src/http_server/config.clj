@@ -24,6 +24,13 @@
     (apply merge __)))
 
 (defn read-config-file [file]
+  (try
   (with-open [reader (io/reader (io/file file))]
-    (config-line-parser (doall (line-seq reader))))) 
+    (let [config-opts (config-line-parser (doall (line-seq reader)))]
+      (if (nil? config-opts)
+        {}
+        config-opts)))
+  (catch Exception e 
+    (prn e)
+    {}))) 
 
