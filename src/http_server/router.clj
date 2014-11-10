@@ -133,7 +133,7 @@
       (some (partial = location) special-routes)
         (handle-special-route location directory headers params)
       (= "/" location)
-        (get-file-data directory "/index" headers)
+        (get-file-data directory "/index.html" headers)
       :else (get-file-data directory location headers))))
 
 (defn options-route [location directory]
