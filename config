@@ -1,10 +1,10 @@
-protected: /file1, /text-file.txt
+directory: /
+
+authenticate: logs
+credentials: admin:hunter2
 
 redirect: /redirect
 
-authenticate: /logs
+accept-parameters: /parameters
 
-credentials: admin:hunter2
-
-
-
+protected: /file1, /text-file.txt

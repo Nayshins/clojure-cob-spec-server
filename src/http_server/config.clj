@@ -25,5 +25,5 @@
 
 (defn read-config-file [file]
   (with-open [reader (io/reader (io/file file))]
-    (config-line-parser (line-seq reader)))) 
+    (config-line-parser (doall (line-seq reader))))) 
 

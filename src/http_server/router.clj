@@ -15,7 +15,10 @@
                              (java.io.File. "")
                              .getAbsolutePath) "/config")))
 
-(def special-routes '("/" "/redirect" "/parameters" "/logs"))
+(def special-routes (concat (config-options :directory) 
+                          (config-options :accept-parameters)
+                          (config-options :redirect)
+                          (config-options :authenticate)))
 
 (defn to-byte-array [string]
   (->> ^String string
@@ -59,7 +62,8 @@
        (byte-array)))
 
 (defn parse-byte-range [byte-header]
-  (map #(.replaceAll ^String % "[^0-9]" "")  (clojure.string/split byte-header #"-")))
+  (map #(.replaceAll ^String % "[^0-9]" "")
+       (clojure.string/split byte-header #"-")))
 
 (defn get-body-range [body-bytes range-header path]
   (let [byte-range (parse-byte-range range-header)
@@ -106,13 +110,20 @@
                     {:Content-Length (count decoded-params)} 
                     decoded-params)))
 
+(defn contain-route? [config-option location]
+  (some (partial = location) config-option))
+
 (defn handle-special-route [location directory headers params]
-  (case location
-    "/" (build-directory directory)
-    "/logs" (authenticate directory location headers)
-    "/parameters" (handle-query params)
-    "/redirect" (build-response :301 {"Location" "http://localhost:5000/"})
-    (build-response :200 {})))
+  (cond
+    (contain-route? (config-options :directory) location) 
+      (build-directory directory)
+    (contain-route? (config-options :authenticate) location) 
+      (authenticate directory location headers)
+    (contain-route? (config-options :accept-parameters) location)
+      (handle-query params)
+    (contain-route? (config-options :redirect) location) 
+      (build-response :301 {"Location" "http://localhost:5000/"})
+    :else (build-response :500 {})))
 
 (defn get-route [location directory headers] 
   (let [query (clojure.string/split location #"\?") 
