@@ -11,8 +11,6 @@
       (http-server.router/get-route request directory)
       {:status 401 :body (byte-array (.getBytes "Authentication required"))})))
 
-
-
 (def directory-links (http-server.router/build-directory directory))
 
 (def routes [["GET" "/" directory-links]
@@ -30,7 +28,6 @@
   (let [query (clojure.string/split (request :location) #"\?")
         location (first query)
         params (second query)]
-    (prn params)
     (if (nil? params)
       nil
       {:status 200 :body (http-server.router/decode-params params)})))
