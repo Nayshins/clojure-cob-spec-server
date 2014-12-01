@@ -1,4 +1,4 @@
-# Simple Http Server Written in Clojure
+# Cob Spec Compliant Server Written in Clojure
 
 ## Requirements 
 Leiningen 2.5 is required in order to run the server. Installation instructions can be found [here](http://leiningen.org/)
