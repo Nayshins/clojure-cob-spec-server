@@ -15,7 +15,7 @@ Cob Spec test suite is required to run the acceptance tests. The test suite and 
 to install dependencies
 
 ## Running the server
-This server is configured to meet the specifications of the Cob Spec test suite, and all that is need to run it is the command:
+This server is configured to meet the specifications of the Cob Spec test suite, and all that is needed to run it is the command:
 ```
 $ lein run
 ```
@@ -28,5 +28,4 @@ $ git checkout 43915978af27075e0c3596b1443b0be185b238ba
 to use the version of cob spec this server was built against
 
 Cob spec will require a minimal amount of setup.  This server requires that you set the public directory to the cob-spec-server's public directory. Once cob spec is set up, you can run the
-suite against the running server by clicking on the suite button that is on the fitnesse
-page.
+suite against the running server by clicking on the suite button on the fitnesse menu bar.
