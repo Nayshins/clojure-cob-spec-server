@@ -27,6 +27,6 @@ $ git checkout 43915978af27075e0c3596b1443b0be185b238ba
 ```
 to use the version of cob spec this server was built against
 
-Cob spec will require a minimal amount of setup, and for this server it requires that you set the public directory to the cob-spec-server's public directory. Once cob spec is set up, you can run the
+Cob spec will require a minimal amount of setup.  This server requires that you set the public directory to the cob-spec-server's public directory. Once cob spec is set up, you can run the
 suite against the running server by clicking on the suite button that is on the fitnesse
 page.
