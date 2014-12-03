@@ -1,15 +1,16 @@
 (ns http-server.startup
   (:require [http-server.cli-options :as cli-options]
             [http-server.server :as server]
+            [http-server.static-router :as static-router]
             [http-server.resource-handler :as resource-handler]
-            [http_server.handlers :as handlers-helper]))
+            [http-server.handlers :as handlers-helper]))
 
 (def directory "./public")
 
 (defn authenticate [request]
   (let [headers (request :headers)] 
     (if (headers :Authorization)
-      (resource-handler/get-route request directory)
+      (static-router/get-route request directory)
       {:status 401 :body (byte-array (.getBytes "Authentication required"))})))
 
 (defn directory-links [directory]
@@ -35,7 +36,7 @@
       {:status 200 :body (resource-handler/decode-params params)})))
 
 (defn resource-router [request]
-  (resource-handler/router request directory))
+  (static-router/router request directory))
 
 (defn not-found [request]
   {:status 404})
