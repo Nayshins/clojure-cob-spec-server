@@ -23,6 +23,11 @@
              ["POST" "/text-file.txt" {:status 405}]
              ["GET" "/redirect" {:status 301
                                  :headers {"Location" "http://localhost:5000/"}}]
+             ["HEAD" "/file1" {:status 200
+                               :headers 
+                               {"Content-Length" 
+                                (count (.getBytes 
+                                         (slurp (str directory "/file1"))))}}]
              ["GET" "/logs" authenticate]])
 
 (defn app-router [request]
