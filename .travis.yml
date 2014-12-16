@@ -1,3 +1,3 @@
-nguage: clojure
+language: clojure
 lein: lein2
 script: lein spec
