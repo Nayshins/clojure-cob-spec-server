@@ -20,6 +20,7 @@
   (after (write-to-test ""))
 
   (it "returns file contnets from a GET /file request"
+    (write-to-test "hello")
     (should= 
       200 ((router {:action "GET" :location "tmp/test" :headers {}} "/") :status)))
 
